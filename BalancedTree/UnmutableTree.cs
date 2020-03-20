@@ -8,8 +8,13 @@ using System.Windows.Forms;
 
 namespace BalancedTree
 {
+    /// <summary>
+    /// Класс неизменяемого дерева, все методы, как-то меняющие содержимое выбрасывают исключение
+    /// </summary>
+    /// <typeparam name="T"></typeparam>
     public class UnmutableTree<T> : ITree<T> where T: IComparable
     {
+        //Дерево, для которого создается обертка
         ITree<T> tree;
         public int Count { get { return tree.Count; } }
         public bool IsEmpty { get { return tree.IsEmpty; } }
@@ -51,7 +56,7 @@ namespace BalancedTree
         }
         public void DisplayAllTree(TreeView tree)
         {
-
+            this.tree.DisplayAllTree(tree);
         }
     }
 }

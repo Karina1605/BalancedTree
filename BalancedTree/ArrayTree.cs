@@ -9,18 +9,34 @@ using System.Drawing;
 
 namespace BalancedTree
 {
- 
+    /// <summary>
+    /// Сплошное представление дерева
+    /// Шаблонный класс сбалансированного дерева, поддерживающий интефейс ITree, параметр T должен поддерживать IComparable
+    /// </summary>
+    /// <typeparam name="T"></typeparam>
     public class ArrayTree<T> : ITree<T> where T : IComparable
     {
+        //Вспомогательный шаблонный класс, описывающий ячейку массива при сплошной реализации, тип T также IComparable
         public class Elem<T> where T : IComparable
         {
+            //Информационная часть узла
             public T info;
+
+            //Указатели, содержащие индексы левогои правого потомка в массиве
             public int left, right;
+
+            //Свойство - графическое представление узла
             public TreeNode viewNode { get; set; }
+
+            //Оболочка метода Compare (на вход поступает информация типа T и сранвнивается с полем info узла, 
+            //если сравнение дало 0 - возвращается true, иначе - false)
             public bool Compare(T node)
             {
                 return (info.CompareTo(node) == 0);
             }
+
+            //Конструктор узла (обязательный параметр только информационная часть, признак конца иерархии в данной реализации - 
+            // если пол-указатель на потомка ==-1)
             public Elem(T node, TreeNode nodev =null, int leftindex = -1, int rightindex = -1)
             {
                 info = node;
@@ -31,82 +47,133 @@ namespace BalancedTree
                 else
                     viewNode = nodev;
             }
+
+            //Перегруженный метод ToString класса Object, возвращет строковое представление информационной части узла
             public override string ToString()
             {
                 return info.ToString();
             }
-
         }
+
+        //Поле, содержащее массив узлов (само дерево)
         Elem<T>[] TreeNodes;
+
+        //Стек для хранения порядка добавления узлов (история добалений в дерево (нужен при удалении узла))
         Stack<int> orderNodes;
-        int lastPos;
+
+        //Первый свободный индекс массива
+        int FirstPos;
+
+        //Графическое отображение дерева
         TreeView view;
-        public Elem<T> this[int i] { get { return TreeNodes[i]; } }
-        public ArrayTree (int s=200)
+
+        //Конструктор с параметрами по умолч (tree - графическое представление, s - размер массива, в котором будет храниться дерево)
+        public ArrayTree(TreeView tree = null, int s = 200)
         {
-            lastPos = 0;
+            FirstPos = 0;
             TreeNodes = new Elem<T>[s];
-            view = new TreeView();
+            if (tree == null)
+                view = new TreeView();
+            else
+                view = tree;
             orderNodes = new Stack<int>();
         }
-        public ArrayTree(TreeView tree, int s = 200): this()
-        {
-            view = tree;
-        }
+
+        //Функция добавления, на вход поступет информация, если таковой нет в дереве, то она записывается
+        //Алгоитм добавления описан в модуле ITree, при заполненном массиве выбрасывается исключение
         public void Add(T node)
         {
+            //Если вставлять некуда - исключние
             if (orderNodes.Count == TreeNodes.Length)
                 throw new FullTreeException();
+            //Если дерево пусто - просто добавляем на 1-ую позицию с индексом 0, следующее свободное поле имеет индекс 1
             if (orderNodes.Count == 0)
-            {              
+            {
+                //Инициализация графического представления
                 TreeNode treeNode = new TreeNode(node.ToString());
+                //Добавление узла на TreeView
                 view.Nodes.Add(treeNode);
+                //Заполенение ячейки (индексы левого и првого потомка равны -1 по умолч)
                 TreeNodes[0] = new Elem<T>(node, treeNode);
-                lastPos = orderNodes.Count+1;
+                //Следующая свободная позиция в массива
+                FirstPos = 1;
+                //Добавление эл-та в стек (история добалений в дерево)
                 orderNodes.Push(0);
             }
+            //Если дерево не пусто
             else
             {
-                if (IsThatElem(node, 0)==-1)
+                //Проверяем, что узла с таким значением не в дереве (IsThatElem возвращает индекс узла, у которого ифнормационная часть совпала с параметром)
+                if (IsThatElem(node, 0) == -1)
                 {
+                    //Инициализация очереди для обхода в ширину
                     Queue<int> nodes = new Queue<int>();
+
+                    //Буфер для хранения промежуточных значений, хранящихся в очереди
                     int buf;
+                    //Буфер для хранения элемента с пустым правым поддеревом
                     int bufForRight = -1;
+                    //Добавление первого элемента в очередь
                     nodes.Enqueue(0);
+                    //Логическая переменная для цикла
                     bool isadded = false;
-                    while (nodes.Count > 0 && !isadded)
+                    //Продолжать поиск, пока элемент не добавлен
+                    while (!isadded)
                     {
+                        //Переменная, хранящая кол-во узлов на текущем уровне
                         int c = nodes.Count;
+                        //Цикл будет выполняться пока не обойдем все узлы текущего уровня или не добавим элемент
                         for (int i = 0; i < c && !isadded; ++i)
                         {
+                            //Достаем первый в очереди узел
                             buf = nodes.Dequeue();
+                            //Если левое поддерево пусто - добавляем
                             if (TreeNodes[buf].left == -1)
                             {
-                                TreeNodes[buf].left = lastPos;
+                                //Теперь идекс левого узла - первая свободная ячейка (в нее и запишется новый узел)
+                                TreeNodes[buf].left = FirstPos;
+                                //Инициализация графики (раньше, чтобы добавить потомка родительсеому узлу и этот же узел передать в конструктор)
                                 TreeNode treeNode = new TreeNode(node.ToString());
+                                //Добавление потомка узлу-родителю
                                 TreeNodes[buf].viewNode.Nodes.Add(treeNode);
-                                TreeNodes[lastPos] = new Elem<T>(node, treeNode);
-                                orderNodes.Push(lastPos);
-                                lastPos = orderNodes.Count + 1;
+                                //Запись элемента в первую свободную ячейку
+                                TreeNodes[FirstPos] = new Elem<T>(node, treeNode);
+                                //Добавление индекса в стек
+                                orderNodes.Push(FirstPos);
+                                //Передвигаем на след свободную ячейку
+                                FirstPos++;
+                                //Завершаем цикл
                                 isadded = true;
                             }
+                            //Левое поддерево не пусто
                             else
                             {
+                                //Добавляем левый индекс в очередь
                                 nodes.Enqueue(TreeNodes[buf].left);
+                                //Если пусто правое поддерево и не найдена певая позиция эл-та с пустым правым поддеревом - инициализируем переменную
                                 if (TreeNodes[buf].right == -1 && bufForRight == -1)
                                     bufForRight = buf;
                             }
+                            //если все же и правое поддерево есть - добавяем в очередь
                             if (TreeNodes[buf].right != -1)
                                 nodes.Enqueue(TreeNodes[buf].right);
                         }
+                        //Если по кончанию цикла элемент не добавлен (все левые поддеревья заняты), но есть эл-т с пустым правым поддеревом, добавляем в него
                         if (!isadded && bufForRight != -1)
-                        {   
+                        {
+                            //Инициализация графики
                             TreeNode treeNode = new TreeNode(node.ToString());
-                            TreeNodes[lastPos] = new Elem<T>(node, treeNode);
-                            TreeNodes[bufForRight].viewNode.Nodes.Add(treeNode);                           
-                            TreeNodes[bufForRight].right = lastPos;
-                            orderNodes.Push(lastPos);
-                            lastPos = orderNodes.Count+1;
+                            //Создание эл-та
+                            TreeNodes[FirstPos] = new Elem<T>(node, treeNode);
+                            //Добавление графических потомков узлу-родителю
+                            TreeNodes[bufForRight].viewNode.Nodes.Add(treeNode);
+                            //Перемещение идекса правого поддерева
+                            TreeNodes[bufForRight].right = FirstPos;
+                            //Добавление в стек
+                            orderNodes.Push(FirstPos);
+                            //Переход к след свободной ячейке
+                            FirstPos++;
+                            //Прекращение цикла
                             isadded = true;
                         }
                     }
@@ -114,52 +181,62 @@ namespace BalancedTree
             }
         }
 
-        
+
+        //Очистка дерева
         public void Clear()
         {
-           view.Nodes.Clear();
+            //Очистка TreeView
+            view.Nodes.Clear();
+            //Обнуление всех эл-тов массива
             for (int i = 0; i < orderNodes.Count; ++i)
                 TreeNodes[i] = null;
-            lastPos = 0;
+            //Первая свободная позици - 0
+            FirstPos = 0;
+            //Очистка истории добавления узлов
             orderNodes.Clear();
         }
-        private int IsThatElem(T node, int index)
-        {
-            if (index == -1 || index >= TreeNodes.Length)
-                   return -1;
-            if (TreeNodes[index].info.CompareTo(node) == 0)
-                return index;
-            int l = IsThatElem(node, TreeNodes[index].left);
-            if (l == -1)
-                return IsThatElem(node, TreeNodes[index].right);
-            return l;
-        }
+
+        /// <summary>
+        ///Поиск элемента с помощью рукерсивой ф-ции IsThatElem (если элемент не найден - возвращает -1)
+        ///Contains возврвщвает false, если IsThatElem вернет -1 
+        /// </summary>
+        /// <param name="node"></param>
+        /// <returns></returns>
         public bool Contains(T node)
         {
+            //node - информационная часть, 0- индекс в массиве, с которго начинать поиск
             int pos = IsThatElem(node, 0);
             if (pos != -1)
-            {
-                if (TreeNodes[pos].viewNode != null)
-                {
-                    TreeNodes[pos].viewNode.ForeColor = Color.Red;
-                    MessageBox.Show("Элемент найден");
-                    TreeNodes[pos].viewNode.ForeColor = Color.Black;
-                }
+            {               
+                TreeNodes[pos].viewNode.ForeColor = Color.Red;
+                MessageBox.Show("Элемент найден");
+                TreeNodes[pos].viewNode.ForeColor = Color.Black;
             }
             else
                 MessageBox.Show("Нет такого элемента");
-            return pos!=-1;
+            return pos != -1;
         }
+
+
+        /// <summary>
+        ///Перебор для консрукции foreach. Обход в ширину
+ 
+        /// </summary>
+        /// <returns></returns>
         public IEnumerator<T> GetEnumerator()
         {
+            //если коллекция пуста - исключение
             if (IsEmpty)
                 throw new TryToGetEmptyTree();
+            //Очередь идексов эл-тов
             Queue<int> indexes = new Queue<int>();
             indexes.Enqueue(0);
             while (indexes.Count > 0)
             {
+                //Достаем индекс и возвращаем его информационную часть
                 int b = indexes.Dequeue();
                 yield return TreeNodes[b].info;
+                //Если есть потомки, добавляем в очередь
                 if (TreeNodes[b].left != -1)
                     indexes.Enqueue(TreeNodes[b].left);
                 if (TreeNodes[b].right != -1)
@@ -167,34 +244,113 @@ namespace BalancedTree
             }
 
         }
-        
-            
-        
+        /// <summary>
+        /// Удаление элемента node типа Т , если дерево пусто -исключение
+        /// </summary>
+        /// <param name="node"></param>
         public void Remove(T node)
         {
+            //Если дерево пусто -исключение
             if (IsEmpty)
                 throw new RemovingFromEmptyTree();
+            //Ищем узел с такой же информационной частью, как и node
             int res = IsThatElem(node, 0);
-            if (res!=-1)
+            //Если он найден
+            if (res != -1)
             {
+                //Достаем идекс последнего добавленного
                 int last = orderNodes.Pop();
-                if (res !=last)
+                //Если это не один и тот же индекс, переприсваиваем информационную часть
+                if (res != last)
                 {
-                    TreeNodes[res].info= TreeNodes[last].info;
+                    TreeNodes[res].info = TreeNodes[last].info;
                 }
+                //Обновление графического представления
                 TreeNodes[res].viewNode.Text = TreeNodes[res].info.ToString();
+                //Ищем родителя последнего добавленного узла (на вход findParent подается индекс узла-потомка,
+                //осуществляется рекурсивный проход и, если у узла один идекс потомка равен параметру, 
+                //то возвращает индекс найденного родителя, если не нашли, то -1
                 int p = FindParent(last, 0);
+                //Удаление графического узла
                 TreeNodes[last].viewNode.Remove();
+                //Освобождение ячеки массива
                 TreeNodes[last] = null;
-                if (p!=-1)
+                //Если родитель есть (узел -не корень) обнуляем ветку
+                if (p != -1)
                     if (TreeNodes[p].left == last)
                         TreeNodes[p].left = -1;
                     else
                         TreeNodes[p].right = -1;
+                FirstPos--;
             }
         }
+
+        /// <summary>
+        ///кол-во узлов в дереве 
+        /// </summary>
+        public int Count { get { return orderNodes.Count; } }
+
+        /// <summary>
+        ///Пусто ли дерево
+        /// </summary>
+        public bool IsEmpty { get { return orderNodes.Count == 0; } }
+
+
+        /// <summary>
+        ///Возват объекта, поддерживающего IEnumerable 
+        /// </summary>
+        public IEnumerable<T> nodes { get { return this; } }
+
+        /// <summary>
+        ///Отображение всего дерева, на вход поступет TreeView, на которую отобразить
+        /// </summary>
+        /// <param name="tree"></param>
+        public void DisplayAllTree(TreeView tree)
+        {
+            //Создание и заполнение нового узла
+            TreeNodes[0].viewNode = new TreeNode();
+            TreeNodes[0].viewNode.Text = TreeNodes[0].info.ToString();
+            //Добавление в tree
+            tree.Nodes.Add(TreeNodes[0].viewNode);
+            //Если есть потомки - вызываем рекурсивную процедкру добавления
+            if (TreeNodes[0].left != -1)
+                DisplayOneNode(TreeNodes[0].left, TreeNodes[0].viewNode);
+            if (TreeNodes[0].right != -1)
+                DisplayOneNode(TreeNodes[0].right, TreeNodes[0].viewNode);
+        }
+
+        //Идексатор для доступа к массиву
+        public Elem<T> this[int i] { get { return TreeNodes[i]; } }
+        //Фунция возвращает идекс элемента, у которого информационная часть совпадает с параметром node, index - параметр индекса элемента в массиве
+        private int IsThatElem(T node, int index)
+        {
+            //если дошли до конца - возвращаем -1
+            if (index == -1 || index >= TreeNodes.Length)
+                   return -1;
+            //если элемент совпал возвращаем индекс
+            if (TreeNodes[index].info.CompareTo(node) == 0)
+                return index;
+            //Если нет - просматриваем левое поддерево
+            int l = IsThatElem(node, TreeNodes[index].left);
+            //если и там нет - возвращаем результат правого
+            if (l == -1)
+                return IsThatElem(node, TreeNodes[index].right);
+            //Если в левом поддереве есть найденный элемент, то просто его возвращаем
+            return l;
+        }
+
+        //Реализация интерфейса IEnumerable
+        IEnumerator IEnumerable.GetEnumerator()
+        {
+            return GetEnumerator();
+        }
+
+        //Поиск родителя, Child - индекс потомка, родителя которого нужно найти pos - позиция текущего узла 
+        //Возвращает или -1, если родительне найден (ищем пдителя для корня) или позицию эл-та у которого один из потомков на Child позиции
+        //По реализации схоже с IsThatElem
         private int FindParent(int Child, int pos)
         {
+
             if (pos==-1 || (TreeNodes[pos].left == -1 && TreeNodes[pos].right == -1))
                 return -1;
             if (TreeNodes[pos].left == Child || TreeNodes[pos].right == Child)
@@ -205,32 +361,18 @@ namespace BalancedTree
             return l;
             
         }
-        public int Count { get { return orderNodes.Count; } }
-        public bool IsEmpty { get { return orderNodes.Count==0; } }
-        public IEnumerable<T> nodes {get { return this; } }
-        public void DisplayAllTree(TreeView tree)
-        {
-            TreeNodes[0].viewNode = new TreeNode();
-            TreeNodes[0].viewNode.Text = TreeNodes[0].info.ToString();
-            tree.Nodes.Add(TreeNodes[0].viewNode);
-            if (TreeNodes[0].left != -1)
-                DisplayOneNode(TreeNodes[0].left, TreeNodes[0].viewNode);
-            if (TreeNodes[0].right != -1)
-                DisplayOneNode(TreeNodes[0].right, TreeNodes[0].viewNode);
-        }
+        
+        //Передается parent - узел в потомки которого нужно записать текущий и pos - индекс элемента
         private void DisplayOneNode(int pos, TreeNode parent)
         {
             TreeNodes[pos].viewNode = new TreeNode();
             TreeNodes[pos].viewNode.Text = TreeNodes[pos].info.ToString();
             parent.Nodes.Add(TreeNodes[pos].viewNode);
+
             if (TreeNodes[pos].left != -1)
                 DisplayOneNode(TreeNodes[pos].left, TreeNodes[pos].viewNode);
             if (TreeNodes[pos].right!=-1)
                 DisplayOneNode(TreeNodes[pos].right, TreeNodes[pos].viewNode);
-        }
-        IEnumerator IEnumerable.GetEnumerator()
-        {
-            return GetEnumerator();
         }
     }
 }

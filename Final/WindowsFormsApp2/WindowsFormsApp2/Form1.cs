@@ -12,20 +12,17 @@ using BalancedTree;
 
 namespace WindowsFormsApp2
 {
-    
     public partial class Form1 : Form
     {
+        //Само дерево
         ITree<int> TreeInt;
         public Form1()
         {
             InitializeComponent();
         }
 
-        private void Form1_Load(object sender, EventArgs e)
-        {
-
-        }
-
+        
+        //Выбор реализации
         private void button1_Click(object sender, EventArgs e)
         {
             if (Implement.Text == "")
@@ -53,6 +50,8 @@ namespace WindowsFormsApp2
             }
         }
 
+        //В последующих 4 функциях осущесвляется попытка вызова метода ITree и ловится исключение, если нерево неизменяемо 
+        //Добаление узла
         private void Addbutton_Click(object sender, EventArgs e)
         {
             try
@@ -73,7 +72,8 @@ namespace WindowsFormsApp2
                 MessageBox.Show("Достигнуто максимальное кол-во узлов",  "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
         }
-
+        
+        //Удаление узла
         private void Removebutton_Click(object sender, EventArgs e)
         {
             try
@@ -95,17 +95,8 @@ namespace WindowsFormsApp2
             }
             
         }
-
-        private void IsContainbutton_Click(object sender, EventArgs e)
-        {
-            string s = Interaction.InputBox("Введите значение", "Ввод");
-            int r;
-            if (Int32.TryParse(s, out r))
-                TreeInt.Contains(r);
-            else
-                MessageBox.Show("Вы должны ввести число");
-        }
-
+        
+        //Преобразование всех эл-тов дерева
         private void ForEachbutton_Click(object sender, EventArgs e)
         {
             try
@@ -118,9 +109,36 @@ namespace WindowsFormsApp2
             {
                 MessageBox.Show("Нельзя изменять неизменяемое дерево", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
-            
+
+        }
+        
+        //Очистка дерева
+        private void button2_Click(object sender, EventArgs e)
+        {
+            try
+            {
+                TreeInt.Clear();
+            }
+            catch (AttemptOfChangingUnmutableTree)
+            {
+                MessageBox.Show("Нельзя изменять неизменяемое дерево", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
         }
 
+
+        //В послед 4 функциях изменеия дерева нет
+        //Проверка, содержится ли элемент в дереве
+        private void IsContainbutton_Click(object sender, EventArgs e)
+        {
+            string s = Interaction.InputBox("Введите значение", "Ввод");
+            int r;
+            if (Int32.TryParse(s, out r))
+                TreeInt.Contains(r);
+            else
+                MessageBox.Show("Вы должны ввести число");
+        }
+
+        //Проверка соотвествия всех эл-тов условию
         private void CheckForAllbutton_Click(object sender, EventArgs e)
         {
             if (TreeUtils<int>.CheckForAll(TreeInt, TreeUtils<int>.Check))
@@ -129,13 +147,16 @@ namespace WindowsFormsApp2
                 MessageBox.Show("Не все эл-ты дерева делятся на 3");
         }
 
+        //Выборка всех эл-тов соответствующих условию
         private void FindAllbutton_Click(object sender, EventArgs e)
         {
+            //В целях упрощения записи заводится переменная
             ITree<int> res;
             if (TreeInt is ListTree<int>)
                 res = TreeUtils<int>.FindAll(TreeInt, TreeUtils<int>.CheckForNew, TreeUtils<int>.ListConstuctorDelegate);
             else
                 res = TreeUtils<int>.FindAll(TreeInt, TreeUtils<int>.CheckForNew, TreeUtils<int>.ArrayConstructorDelegate);
+            //Создание и отображение формы с результирующим деревом
             Form form = new Form();
             TreeView view = new TreeView();
             view.Width = 600;
@@ -148,6 +169,8 @@ namespace WindowsFormsApp2
             form.Show();
         }
 
+
+        //построение неизменяемого дерева
         private void BuildUnmutablebutton_Click(object sender, EventArgs e)
         {
             UnmutableTree<int> UnTree = new UnmutableTree<int>(TreeInt);
@@ -155,16 +178,6 @@ namespace WindowsFormsApp2
             MessageBox.Show("Дерево построено!");
         }
 
-        private void button2_Click(object sender, EventArgs e)
-        {
-            try
-            {
-                TreeInt.Clear();
-            }
-            catch (AttemptOfChangingUnmutableTree)
-            {
-                MessageBox.Show("Нельзя изменять неизменяемое дерево", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
-            }
-        }
+        
     }
 }

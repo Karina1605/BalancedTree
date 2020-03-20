@@ -158,6 +158,7 @@
             // 
             // button2
             // 
+            this.button2.Enabled = false;
             this.button2.Location = new System.Drawing.Point(702, 390);
             this.button2.Name = "button2";
             this.button2.Size = new System.Drawing.Size(185, 46);
@@ -185,7 +186,6 @@
             this.Controls.Add(this.Implement);
             this.Name = "Form1";
             this.Text = "Form1";
-            this.Load += new System.EventHandler(this.Form1_Load);
             this.ResumeLayout(false);
             this.PerformLayout();
 
