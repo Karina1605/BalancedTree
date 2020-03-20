@@ -47,6 +47,7 @@ namespace WindowsFormsApp2
                 FindAllbutton.Enabled = true;
                 ForEachbutton.Enabled = true;
                 BuildUnmutablebutton.Enabled = true;
+                button2.Enabled = true;
             }
         }
 
