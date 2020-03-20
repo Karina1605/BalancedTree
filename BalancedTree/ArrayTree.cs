@@ -1,62 +1,73 @@
 ﻿using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using System.Windows.Forms;
+using System.Drawing;
 
 namespace BalancedTree
 {
  
-    public class ArrayTree<T> : BaseTree<T> where T : IComparable
+    public class ArrayTree<T> : ITree<T> where T : IComparable
     {
-        class Elem<T> where T : IComparable
+        public class Elem<T> where T : IComparable
         {
             public T info;
             public int left, right;
+            public TreeNode viewNode { get; set; }
             public bool Compare(T node)
             {
                 return (info.CompareTo(node) == 0);
             }
-            public Elem(T node, int leftindex = -1, int rightindex = -1)
+            public Elem(T node, TreeNode nodev =null, int leftindex = -1, int rightindex = -1)
             {
                 info = node;
                 left = leftindex;
                 right = rightindex;
+                if (nodev == null)
+                    viewNode = new TreeNode();
+                else
+                    viewNode = nodev;
             }
+            public override string ToString()
+            {
+                return info.ToString();
+            }
+
         }
         Elem<T>[] TreeNodes;
-        int count;
+        Stack<int> orderNodes;
         int lastPos;
-        int LastElem;
-        public ArrayTree(int s = 200)
+        TreeView view;
+        public Elem<T> this[int i] { get { return TreeNodes[i]; } }
+        public ArrayTree (int s=200)
         {
-            count = 0;
             lastPos = 0;
             TreeNodes = new Elem<T>[s];
+            view = new TreeView();
+            orderNodes = new Stack<int>();
         }
-        int findNextEmpty()
+        public ArrayTree(TreeView tree, int s = 200): this()
         {
-            int res = 0;
-            while (res < TreeNodes.Length && TreeNodes[res] != null)
-                ++res;
-            if (res == TreeNodes.Length)
-                return -1;
-            return res;
+            view = tree;
         }
-        public override void Add(T node)
+        public void Add(T node)
         {
-            if (count == TreeNodes.Length)
+            if (orderNodes.Count == TreeNodes.Length)
                 throw new FullTreeException();
-            if (count == 0)
-            {
-                TreeNodes[0] = new Elem<T>(node);
-                count++;
-                lastPos = findNextEmpty();
-                LastElem = 0;
+            if (orderNodes.Count == 0)
+            {              
+                TreeNode treeNode = new TreeNode(node.ToString());
+                view.Nodes.Add(treeNode);
+                TreeNodes[0] = new Elem<T>(node, treeNode);
+                lastPos = orderNodes.Count+1;
+                orderNodes.Push(0);
             }
             else
             {
-                if (!Contains(node))
+                if (IsThatElem(node, 0)==-1)
                 {
                     Queue<int> nodes = new Queue<int>();
                     int buf;
@@ -72,9 +83,11 @@ namespace BalancedTree
                             if (TreeNodes[buf].left == -1)
                             {
                                 TreeNodes[buf].left = lastPos;
-                                TreeNodes[lastPos] = new Elem<T>(node);
-                                lastPos = findNextEmpty();
-                                LastElem = buf;
+                                TreeNode treeNode = new TreeNode(node.ToString());
+                                TreeNodes[buf].viewNode.Nodes.Add(treeNode);
+                                TreeNodes[lastPos] = new Elem<T>(node, treeNode);
+                                orderNodes.Push(lastPos);
+                                lastPos = orderNodes.Count + 1;
                                 isadded = true;
                             }
                             else
@@ -87,25 +100,28 @@ namespace BalancedTree
                                 nodes.Enqueue(TreeNodes[buf].right);
                         }
                         if (!isadded && bufForRight != -1)
-                        {
-                            TreeNodes[lastPos] = new Elem<T>(node);
+                        {   
+                            TreeNode treeNode = new TreeNode(node.ToString());
+                            TreeNodes[lastPos] = new Elem<T>(node, treeNode);
+                            TreeNodes[bufForRight].viewNode.Nodes.Add(treeNode);                           
                             TreeNodes[bufForRight].right = lastPos;
-                            LastElem = lastPos;
-                            lastPos = findNextEmpty();
+                            orderNodes.Push(lastPos);
+                            lastPos = orderNodes.Count+1;
+                            isadded = true;
                         }
                     }
-                    count++;
                 }
-                
             }
         }
 
         
-        public override void Clear()
+        public void Clear()
         {
-            for (int i = 0; i < count; ++i)
+           view.Nodes.Clear();
+            for (int i = 0; i < orderNodes.Count; ++i)
                 TreeNodes[i] = null;
-            count = 0;
+            lastPos = 0;
+            orderNodes.Clear();
         }
         private int IsThatElem(T node, int index)
         {
@@ -118,11 +134,23 @@ namespace BalancedTree
                 return IsThatElem(node, TreeNodes[index].right);
             return l;
         }
-        public override bool Contains(T node)
+        public bool Contains(T node)
         {
-            return IsThatElem(node, 0)!=-1;
+            int pos = IsThatElem(node, 0);
+            if (pos != -1)
+            {
+                if (TreeNodes[pos].viewNode != null)
+                {
+                    TreeNodes[pos].viewNode.ForeColor = Color.Red;
+                    MessageBox.Show("Элемент найден");
+                    TreeNodes[pos].viewNode.ForeColor = Color.Black;
+                }
+            }
+            else
+                MessageBox.Show("Нет такого элемента");
+            return pos!=-1;
         }
-        public override IEnumerator<T> GetEnumerator()
+        public IEnumerator<T> GetEnumerator()
         {
             if (IsEmpty)
                 throw new TryToGetEmptyTree();
@@ -139,66 +167,30 @@ namespace BalancedTree
             }
 
         }
-        private int GetNewLast()
-        {
-            if (TreeNodes[0].left == -1 && TreeNodes[0].right == -1)
-                return 0;
-            if (TreeNodes[0].left == -1)
-                return TreeNodes[0].right;
-            //???
-            if (TreeNodes[0].right == -1)
-                return TreeNodes[0].left;
-            int res = 0;
-            Queue<int> Left = new Queue<int>();
-            Queue<int> Right = new Queue<int>();
-            Left.Enqueue(TreeNodes[0].left);
-            Right.Enqueue(TreeNodes[0].right);
-            int BuffLeft = -1;
-            int BuffRight = -1;
-            while (Left.Count > 0 || Right.Count > 0)
-            {
-                int cl = Left.Count;
-                int cr = Right.Count;
-                BuffLeft = -1;
-                BuffRight = -1;
-                for (int i = 0; i < cl; ++i)
-                {
-                    BuffLeft = Left.Dequeue();
-                    if (TreeNodes[BuffLeft].left != -1)
-                        Left.Enqueue(TreeNodes[BuffLeft].left);
-                    if (TreeNodes[BuffLeft].right != -1)
-                        Right.Enqueue(TreeNodes[BuffLeft].right);
-                }
-                for (int i = 0; i < cl; ++i)
-                {
-                    BuffRight = Left.Dequeue();
-                    if (TreeNodes[BuffRight].left != -1)
-                        Left.Enqueue(TreeNodes[BuffRight].left);
-                    if (TreeNodes[BuffRight].right != -1)
-                        Right.Enqueue(TreeNodes[BuffRight].right);
-                }
-            }
-            if (BuffRight == -1)
-                return BuffLeft;
-            return BuffRight;
-
-            //return res;
-        }
+        
             
         
-        public override void Remove(T node)
+        public void Remove(T node)
         {
+            if (IsEmpty)
+                throw new RemovingFromEmptyTree();
             int res = IsThatElem(node, 0);
             if (res!=-1)
             {
-                Help.Swap(ref TreeNodes[res].info, ref TreeNodes[LastElem].info);
-                int p = FindParent(LastElem, 0);
-                TreeNodes[LastElem] = null;
-                if (TreeNodes[p].left == LastElem)
-                    TreeNodes[p].left = -1;
-                else
-                    TreeNodes[p].right = -1;
-                LastElem = GetNewLast();
+                int last = orderNodes.Pop();
+                if (res !=last)
+                {
+                    TreeNodes[res].info= TreeNodes[last].info;
+                }
+                TreeNodes[res].viewNode.Text = TreeNodes[res].info.ToString();
+                int p = FindParent(last, 0);
+                TreeNodes[last].viewNode.Remove();
+                TreeNodes[last] = null;
+                if (p!=-1)
+                    if (TreeNodes[p].left == last)
+                        TreeNodes[p].left = -1;
+                    else
+                        TreeNodes[p].right = -1;
             }
         }
         private int FindParent(int Child, int pos)
@@ -213,9 +205,32 @@ namespace BalancedTree
             return l;
             
         }
-        public override int Count { get { return count; } }
-        public override bool IsEmpty { get { return count>0; } }
-        public override IEnumerable<T> nodes {get { return this; } }
-        public static ArrayTree<T> Create() { return new ArrayTree<T>();}
+        public int Count { get { return orderNodes.Count; } }
+        public bool IsEmpty { get { return orderNodes.Count==0; } }
+        public IEnumerable<T> nodes {get { return this; } }
+        public void DisplayAllTree(TreeView tree)
+        {
+            TreeNodes[0].viewNode = new TreeNode();
+            TreeNodes[0].viewNode.Text = TreeNodes[0].info.ToString();
+            tree.Nodes.Add(TreeNodes[0].viewNode);
+            if (TreeNodes[0].left != -1)
+                DisplayOneNode(TreeNodes[0].left, TreeNodes[0].viewNode);
+            if (TreeNodes[0].right != -1)
+                DisplayOneNode(TreeNodes[0].right, TreeNodes[0].viewNode);
+        }
+        private void DisplayOneNode(int pos, TreeNode parent)
+        {
+            TreeNodes[pos].viewNode = new TreeNode();
+            TreeNodes[pos].viewNode.Text = TreeNodes[pos].info.ToString();
+            parent.Nodes.Add(TreeNodes[pos].viewNode);
+            if (TreeNodes[pos].left != -1)
+                DisplayOneNode(TreeNodes[pos].left, TreeNodes[pos].viewNode);
+            if (TreeNodes[pos].right!=-1)
+                DisplayOneNode(TreeNodes[pos].right, TreeNodes[pos].viewNode);
+        }
+        IEnumerator IEnumerable.GetEnumerator()
+        {
+            return GetEnumerator();
+        }
     }
 }

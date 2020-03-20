@@ -7,11 +7,11 @@ using System.Threading.Tasks;
 namespace BalancedTree
 {
     public delegate bool CheckDelegate<T>(T node);
-    public delegate void ActionDelegate<T>(T node);
+    public delegate T ActionDelegate<T>(T node);
     public delegate ITree<T> TreeConstructor<T>();
-    public static class TreeUtils
+    public static class TreeUtils<T> where T:IComparable
     {
-        public static bool Excists<T>(ITree<T> tree, CheckDelegate<T> check)
+        public static bool Excists(ITree<T> tree, CheckDelegate<T> check)
         {
             foreach (T node in tree)
             {
@@ -20,28 +20,60 @@ namespace BalancedTree
             }
             return false ;
         }
-        public static void ForEach<T>(ITree<T> tree, ActionDelegate<T> action)
+        public static void ForEach(ITree<T> tree, ActionDelegate<T> action)
         {
-            foreach (T node in tree)
-                action(node);
+            if (tree is UnmutableTree<T>)
+                throw new AttemptOfChangingUnmutableTree();
+            if (tree is ArrayTree<T>)
+            {
+                ArrayTree<T> t = (ArrayTree<T>)tree;
+                for (int i=0; i<tree.Count; ++i)
+                    t[i].info = action(t[i].info);
+            }
+            else
+            {
+                OneNode<T> one = ((ListTree<T>)tree).Root;
+                ForEachList(one, action);
+            }
         }
-        public static bool CheckForAll<T>(ITree<T> tree, CheckDelegate<T> check)
+        private static void ForEachList (OneNode<T> node, ActionDelegate<T> action)
+        {
+            if (node!=null)
+            {
+                node.info = action(node.info);
+                ForEachList(node.left, action);
+                ForEachList(node.right, action);
+            }       
+        }
+        public static bool CheckForAll(ITree<T> tree, CheckDelegate<T> check)
         {
             foreach (T node in tree)
                 if (!check(node))
                     return false;
             return true;
         }
-        public static ITree<T> FindAll<T> (ITree<T> tree, CheckDelegate<T> check, TreeConstructor<T> constructor)
+        public static ITree<T> FindAll(ITree<T> tree, CheckDelegate<T> check, TreeConstructor<T> constructor)
         {
             ITree<T> res = constructor();
             foreach (T ob in tree)
                 if (check(ob))
                     res.Add(ob);
             return res;
+        } 
+        public static ITree<T> ListConstuctorDelegate() { return new ListTree<T>(); }
+        public static ITree<T> ArrayConstructorDelegate() { return new ArrayTree<T>(); }
+        public static  int Action (int node)
+        {
+            return node * 2;
         }
-        
-
+        public static bool Check (int node)
+        {
+            return node % 3 == 0;
+        }
+        public static bool CheckForNew (int node)
+        {
+            return node % 2 == 0;
+        }
     }
     public static class Help
     {

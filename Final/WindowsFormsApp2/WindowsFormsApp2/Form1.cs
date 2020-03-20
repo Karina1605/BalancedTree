@@ -7,6 +7,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Forms;
+using Microsoft.VisualBasic;
 using BalancedTree;
 
 namespace WindowsFormsApp2
@@ -14,9 +15,7 @@ namespace WindowsFormsApp2
     
     public partial class Form1 : Form
     {
-        BaseTree<int> treeInt;
-        BaseTree<string> treeString;
-        BaseTree<MyPoint> treeMyPoint;
+        ITree<int> TreeInt;
         public Form1()
         {
             InitializeComponent();
@@ -29,65 +28,143 @@ namespace WindowsFormsApp2
 
         private void button1_Click(object sender, EventArgs e)
         {
-            if (Type.Text == "" || Implement.Text == "")
+            if (Implement.Text == "")
                 MessageBox.Show("Выберите параметры");
             else
             {
+                NodesTree.Nodes.Clear();
+                TreeInt = null;
                 switch (Implement.Text)
                 {
-                    case "Сплошная":
-                        switch(Type.Text)
-                        {
-                            case "int":
-                                treeInt = new ArrayTree<int>();
-                                break;
-                            case "string":
-                                treeString = new ArrayTree<string>();
-                                break;
-                            case "class Point":
-                                treeMyPoint = new ArrayTree<MyPoint>();
-                                break;
-                        }
-                        break;
                     case "Цепочная":
-                        switch (Type.Text)
-                        {
-                            case "int":
-                                treeInt = new ListTree<int>();
-                                break;
-                            case "string":
-                                treeString =new Lis
-                                break;
-                            case "class Point":
-                                break;
-                        }
+                        TreeInt = new ListTree<int>(NodesTree);
+                        break;
+                    case "Сплошная":
+                        TreeInt = new ArrayTree<int>(NodesTree);
                         break;
                 }
+                Addbutton.Enabled = true;
+                Removebutton.Enabled = true;
+                IsContainbutton.Enabled = true;
+                CheckForAllbutton.Enabled = true;
+                FindAllbutton.Enabled = true;
+                ForEachbutton.Enabled = true;
+                BuildUnmutablebutton.Enabled = true;
             }
         }
-    }
-    class MyPoint : IComparable
-    {
-        int x;
-        int y;
-        public MyPoint(int x, int y)
+
+        private void Addbutton_Click(object sender, EventArgs e)
         {
-            this.x = x;
-            this.y = y;
+            try
+            {
+                string s = Interaction.InputBox("Введите значение", "Ввод");
+                int r;
+                if (Int32.TryParse(s, out r))
+                    TreeInt.Add(r);
+                else
+                    MessageBox.Show("Вы должны ввести число");
+            }
+            catch (AttemptOfChangingUnmutableTree)
+            {
+                MessageBox.Show("Нельзя добавлять в неизменяемое дерево",  "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+            catch (FullTreeException)
+            {
+                MessageBox.Show("Достигнуто максимальное кол-во узлов",  "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
         }
-        public override string ToString()
+
+        private void Removebutton_Click(object sender, EventArgs e)
         {
-            return "x: " + x + " y: " + y;
+            try
+            {
+                string s = Interaction.InputBox("Введите значение", "Ввод");
+                int r;
+                if (Int32.TryParse(s, out r))
+                    TreeInt.Remove(r);
+                else
+                    MessageBox.Show("Вы должны ввести число", "Error",MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+            catch (AttemptOfChangingUnmutableTree)
+            {
+                MessageBox.Show("Нельзя удалять из неизменяемого дерева", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+            catch (RemovingFromEmptyTree ex)
+            {
+                MessageBox.Show("Дерево пусто");
+            }
+            
         }
-        public int CompareTo(object obj)
+
+        private void IsContainbutton_Click(object sender, EventArgs e)
         {
-            int res = ((MyPoint)obj).x * ((MyPoint)obj).x + ((MyPoint)obj).y * ((MyPoint)obj).y;
-            int o = x * x + y * y;
-            if (res == 0)
-                return 0;
-            if (res < 0)
-                return -1;
-            return 1;
+            string s = Interaction.InputBox("Введите значение", "Ввод");
+            int r;
+            if (Int32.TryParse(s, out r))
+                TreeInt.Contains(r);
+            else
+                MessageBox.Show("Вы должны ввести число");
+        }
+
+        private void ForEachbutton_Click(object sender, EventArgs e)
+        {
+            try
+            {
+                TreeUtils<int>.ForEach(TreeInt, TreeUtils<int>.Action);
+                NodesTree.Nodes.Clear();
+                TreeInt.DisplayAllTree(NodesTree);
+            }
+            catch (AttemptOfChangingUnmutableTree)
+            {
+                MessageBox.Show("Нельзя изменять неизменяемое дерево", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+            
+        }
+
+        private void CheckForAllbutton_Click(object sender, EventArgs e)
+        {
+            if (TreeUtils<int>.CheckForAll(TreeInt, TreeUtils<int>.Check))
+                MessageBox.Show("Все эл-ты дерева делятся на 3");
+            else
+                MessageBox.Show("Не все эл-ты дерева делятся на 3");
+        }
+
+        private void FindAllbutton_Click(object sender, EventArgs e)
+        {
+            ITree<int> res;
+            if (TreeInt is ListTree<int>)
+                res = TreeUtils<int>.FindAll(TreeInt, TreeUtils<int>.CheckForNew, TreeUtils<int>.ListConstuctorDelegate);
+            else
+                res = TreeUtils<int>.FindAll(TreeInt, TreeUtils<int>.CheckForNew, TreeUtils<int>.ArrayConstructorDelegate);
+            Form form = new Form();
+            TreeView view = new TreeView();
+            view.Width = 600;
+            view.Height = 500;
+            res.DisplayAllTree(view);
+            form.Controls.Add(view);
+            view.Location = new Point(20, 20);
+            form.Width = 800;
+            form.Height = 600;
+            form.Show();
+        }
+
+        private void BuildUnmutablebutton_Click(object sender, EventArgs e)
+        {
+            UnmutableTree<int> UnTree = new UnmutableTree<int>(TreeInt);
+            TreeInt = UnTree;
+            MessageBox.Show("Дерево построено!");
+        }
+
+        private void button2_Click(object sender, EventArgs e)
+        {
+            try
+            {
+                TreeInt.Clear();
+            }
+            catch (AttemptOfChangingUnmutableTree)
+            {
+                MessageBox.Show("Нельзя изменять неизменяемое дерево", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
         }
     }
 }

@@ -4,17 +4,18 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using System.Windows.Forms;
 
 namespace BalancedTree
 {
     public class UnmutableTree<T> : ITree<T> where T: IComparable
     {
-        BaseTree<T> tree;
+        ITree<T> tree;
         public int Count { get { return tree.Count; } }
         public bool IsEmpty { get { return tree.IsEmpty; } }
 
         public IEnumerable<T> nodes { get { return tree; } }
-        public UnmutableTree(BaseTree<T> ts)
+        public UnmutableTree(ITree<T> ts)
         {
             tree = ts;
         }
@@ -48,6 +49,9 @@ namespace BalancedTree
         {
             return tree.GetEnumerator();
         }
-       
+        public void DisplayAllTree(TreeView tree)
+        {
+
+        }
     }
 }

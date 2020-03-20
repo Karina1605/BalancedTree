@@ -6,25 +6,29 @@ using System.Threading.Tasks;
 
 namespace BalancedTree
 {
-    class TreeException : Exception
+    public class TreeException : Exception
     {
         public TreeException(string message="Problem with a tree") : base(message) { }
     }
-    class FullTreeException : TreeException
+    public class FullTreeException : TreeException
     {
         public FullTreeException(string message="Full Tree Array") 
             : base(message) { }
     }
-    class TryToGetEmptyTree: TreeException
+    public class TryToGetEmptyTree: TreeException
     {
         public TryToGetEmptyTree(string message="The tree is empty"): base(message)
         { }
     }
-    class AttemptOfChangingUnmutableTree :TreeException
+    public class AttemptOfChangingUnmutableTree :TreeException
     {
         public AttemptOfChangingUnmutableTree(string message = "Attempt of changing unmutable tree"):
             base(message)
         { }
+    }
+    public class RemovingFromEmptyTree :TreeException
+    {
+        public RemovingFromEmptyTree(string message = "Removing From Empty Tree") : base(message) { }
     }
 
 }
