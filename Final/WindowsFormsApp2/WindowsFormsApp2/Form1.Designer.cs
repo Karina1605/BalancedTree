@@ -40,6 +40,8 @@
             this.FindAllbutton = new System.Windows.Forms.Button();
             this.BuildUnmutablebutton = new System.Windows.Forms.Button();
             this.button2 = new System.Windows.Forms.Button();
+            this.Typelabel = new System.Windows.Forms.Label();
+            this.Type = new System.Windows.Forms.ComboBox();
             this.SuspendLayout();
             // 
             // Implement
@@ -48,7 +50,7 @@
             this.Implement.Items.AddRange(new object[] {
             "Сплошная",
             "Цепочная"});
-            this.Implement.Location = new System.Drawing.Point(12, 47);
+            this.Implement.Location = new System.Drawing.Point(12, 37);
             this.Implement.Name = "Implement";
             this.Implement.Size = new System.Drawing.Size(143, 24);
             this.Implement.TabIndex = 1;
@@ -64,7 +66,7 @@
             // 
             // button1
             // 
-            this.button1.Location = new System.Drawing.Point(178, 47);
+            this.button1.Location = new System.Drawing.Point(466, 37);
             this.button1.Name = "button1";
             this.button1.Size = new System.Drawing.Size(157, 24);
             this.button1.TabIndex = 4;
@@ -119,7 +121,6 @@
             this.ForEachbutton.Name = "ForEachbutton";
             this.ForEachbutton.Size = new System.Drawing.Size(185, 46);
             this.ForEachbutton.TabIndex = 9;
-            this.ForEachbutton.Text = "Умножить все на 2";
             this.ForEachbutton.UseVisualStyleBackColor = true;
             this.ForEachbutton.Click += new System.EventHandler(this.ForEachbutton_Click);
             // 
@@ -130,7 +131,6 @@
             this.CheckForAllbutton.Name = "CheckForAllbutton";
             this.CheckForAllbutton.Size = new System.Drawing.Size(185, 46);
             this.CheckForAllbutton.TabIndex = 10;
-            this.CheckForAllbutton.Text = "Проверить, что все  делятся на 3";
             this.CheckForAllbutton.UseVisualStyleBackColor = true;
             this.CheckForAllbutton.Click += new System.EventHandler(this.CheckForAllbutton_Click);
             // 
@@ -141,7 +141,6 @@
             this.FindAllbutton.Name = "FindAllbutton";
             this.FindAllbutton.Size = new System.Drawing.Size(185, 46);
             this.FindAllbutton.TabIndex = 11;
-            this.FindAllbutton.Text = "Найти все четные";
             this.FindAllbutton.UseVisualStyleBackColor = true;
             this.FindAllbutton.Click += new System.EventHandler(this.FindAllbutton_Click);
             // 
@@ -167,11 +166,33 @@
             this.button2.UseVisualStyleBackColor = true;
             this.button2.Click += new System.EventHandler(this.button2_Click);
             // 
+            // Typelabel
+            // 
+            this.Typelabel.AutoSize = true;
+            this.Typelabel.Location = new System.Drawing.Point(193, 8);
+            this.Typelabel.Name = "Typelabel";
+            this.Typelabel.Size = new System.Drawing.Size(153, 17);
+            this.Typelabel.TabIndex = 14;
+            this.Typelabel.Text = "Выберите тип данных";
+            // 
+            // Type
+            // 
+            this.Type.FormattingEnabled = true;
+            this.Type.Items.AddRange(new object[] {
+            "int",
+            "string"});
+            this.Type.Location = new System.Drawing.Point(196, 35);
+            this.Type.Name = "Type";
+            this.Type.Size = new System.Drawing.Size(143, 24);
+            this.Type.TabIndex = 15;
+            // 
             // Form1
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(8F, 16F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.ClientSize = new System.Drawing.Size(914, 551);
+            this.Controls.Add(this.Type);
+            this.Controls.Add(this.Typelabel);
             this.Controls.Add(this.button2);
             this.Controls.Add(this.BuildUnmutablebutton);
             this.Controls.Add(this.FindAllbutton);
@@ -204,6 +225,8 @@
         private System.Windows.Forms.Button FindAllbutton;
         private System.Windows.Forms.Button BuildUnmutablebutton;
         private System.Windows.Forms.Button button2;
+        private System.Windows.Forms.Label Typelabel;
+        private System.Windows.Forms.ComboBox Type;
     }
 }
 

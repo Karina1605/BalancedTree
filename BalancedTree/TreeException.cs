@@ -4,6 +4,8 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
+
+//Разработать библиотеку для работы со сбалансированным деревом
 namespace BalancedTree
 {
     /*Классы исключений, которые могут быть сгенерированы при работе с девером 

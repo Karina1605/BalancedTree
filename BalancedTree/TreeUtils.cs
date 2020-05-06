@@ -4,6 +4,8 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
+
+//Разработать библиотеку для работы со сбалансированным деревом
 namespace BalancedTree
 {
     /// <summary>
@@ -134,6 +136,18 @@ namespace BalancedTree
         public static bool CheckForNew (int node)
         {
             return node % 2 == 0;
+        }
+        public static string Action (string s)
+        {
+            return s.ToUpper();
+        }
+        public static bool Check (string s)
+        {
+            return s.Length <10;
+        }
+        public static bool CheckForNew (string s)
+        {
+            return s.Length == 4;
         }
     }
     //Вспомогательный класс с одним методо, меняющим местами 2 аргумента

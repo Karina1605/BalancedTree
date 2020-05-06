@@ -16,6 +16,7 @@ namespace WindowsFormsApp2
     {
         //Само дерево
         ITree<int> TreeInt;
+        ITree<string> TreeString;
         public Form1()
         {
             InitializeComponent();
@@ -25,19 +26,49 @@ namespace WindowsFormsApp2
         //Выбор реализации
         private void button1_Click(object sender, EventArgs e)
         {
-            if (Implement.Text == "")
+            if (Implement.Text == "" || Type.Text=="")
                 MessageBox.Show("Выберите параметры");
             else
             {
                 NodesTree.Nodes.Clear();
                 TreeInt = null;
+                TreeString = null;
                 switch (Implement.Text)
                 {
                     case "Цепочная":
-                        TreeInt = new ListTree<int>(NodesTree);
+                        switch (Type.Text)
+                        {
+                            case "int":
+                                TreeInt = new ListTree<int>(NodesTree);
+                                ForEachbutton.Text = "Умножить все на 2";
+                                CheckForAllbutton.Text = "Проверить, что все  делятся на 3";
+                                FindAllbutton.Text = "Найти все четные";
+                                break;
+                            case "string":
+                                TreeString = new ListTree<string>(NodesTree);
+                                ForEachbutton.Text = "К верзнему регистру";
+                                CheckForAllbutton.Text = "Проверить, что длина всех слов <10";
+                                FindAllbutton.Text = "Найти все слова длиной 4";
+                                break;
+                        }
                         break;
                     case "Сплошная":
-                        TreeInt = new ArrayTree<int>(NodesTree);
+                        switch (Type.Text)
+                        {
+                            case "int":
+                                TreeInt = new ArrayTree<int>(NodesTree);
+                                ForEachbutton.Text = "Умножить все на 2";
+                                CheckForAllbutton.Text = "Проверить, что все  делятся на 3";
+                                FindAllbutton.Text = "Найти все четные";
+                                break;
+                            case "string":
+                                TreeString = new ArrayTree<string>(NodesTree);
+                                TreeString = new ListTree<string>(NodesTree);
+                                ForEachbutton.Text = "К верзнему регистру";
+                                CheckForAllbutton.Text = "Проверить, что длина всех слов <10";
+                                FindAllbutton.Text = "Найти все слова длиной 4";
+                                break;
+                        }
                         break;
                 }
                 Addbutton.Enabled = true;
@@ -58,11 +89,16 @@ namespace WindowsFormsApp2
             try
             {
                 string s = Interaction.InputBox("Введите значение", "Ввод");
-                int r;
-                if (Int32.TryParse(s, out r))
-                    TreeInt.Add(r);
+                if (TreeInt != null)
+                {
+                    int r;
+                    if (Int32.TryParse(s, out r))
+                        TreeInt.Add(r);
+                    else
+                        MessageBox.Show("Вы должны ввести число");
+                }
                 else
-                    MessageBox.Show("Вы должны ввести число");
+                    TreeString.Add(s);
             }
             catch (AttemptOfChangingUnmutableTree)
             {
@@ -80,11 +116,16 @@ namespace WindowsFormsApp2
             try
             {
                 string s = Interaction.InputBox("Введите значение", "Ввод");
-                int r;
-                if (Int32.TryParse(s, out r))
-                    TreeInt.Remove(r);
+                if (TreeInt != null)
+                {
+                    int r;
+                    if (Int32.TryParse(s, out r))
+                        TreeInt.Remove(r);
+                    else
+                        MessageBox.Show("Вы должны ввести число", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                }
                 else
-                    MessageBox.Show("Вы должны ввести число", "Error",MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    TreeString.Remove(s);
             }
             catch (AttemptOfChangingUnmutableTree)
             {
@@ -102,9 +143,15 @@ namespace WindowsFormsApp2
         {
             try
             {
-                TreeUtils<int>.ForEach(TreeInt, TreeUtils<int>.Action);
+                if (TreeInt != null)
+                    TreeUtils<int>.ForEach(TreeInt, TreeUtils<int>.Action);
+                else
+                    TreeUtils<string>.ForEach(TreeString, TreeUtils<string>.Action);
                 NodesTree.Nodes.Clear();
-                TreeInt.DisplayAllTree(NodesTree);
+                if (TreeInt != null)
+                    TreeInt.DisplayAllTree(NodesTree);
+                else
+                    TreeString.DisplayAllTree(NodesTree);
             }
             catch (AttemptOfChangingUnmutableTree)
             {
@@ -118,7 +165,10 @@ namespace WindowsFormsApp2
         {
             try
             {
-                TreeInt.Clear();
+                if (TreeString == null)
+                    TreeInt.Clear();
+                else
+                    TreeString.Clear();
             }
             catch (AttemptOfChangingUnmutableTree)
             {
@@ -132,37 +182,75 @@ namespace WindowsFormsApp2
         private void IsContainbutton_Click(object sender, EventArgs e)
         {
             string s = Interaction.InputBox("Введите значение", "Ввод");
-            int r;
-            if (Int32.TryParse(s, out r))
-                TreeInt.Contains(r);
+            if (TreeString==null)
+            {
+                int r;
+                if (Int32.TryParse(s, out r))
+                {
+                    if (TreeInt.Contains(r))
+                        MessageBox.Show("Элемент \"" + r.ToString() + "\" содержится в дереве");
+                    else
+                        MessageBox.Show("Элемента \"" + r.ToString() + "\" нет в дереве");
+                }
+                else
+                    MessageBox.Show("Вы должны ввести число");
+            }
             else
-                MessageBox.Show("Вы должны ввести число");
+            {
+                if (TreeString.Contains(s))
+                    MessageBox.Show("Элемент \"" + s+ "\" содержится в дереве");
+                else
+                    MessageBox.Show("Элемента \"" + s+ "\" нет в дереве");
+            }
+            
         }
 
         //Проверка соотвествия всех эл-тов условию
         private void CheckForAllbutton_Click(object sender, EventArgs e)
         {
-            if (TreeUtils<int>.CheckForAll(TreeInt, TreeUtils<int>.Check))
-                MessageBox.Show("Все эл-ты дерева делятся на 3");
+            if (TreeString == null)
+                if (TreeUtils<int>.CheckForAll(TreeInt, TreeUtils<int>.Check))
+                    MessageBox.Show("Все эл-ты дерева делятся на 3");
+                else
+                    MessageBox.Show("Не все эл-ты дерева делятся на 3");
             else
-                MessageBox.Show("Не все эл-ты дерева делятся на 3");
+                if (TreeUtils<string>.CheckForAll(TreeString, TreeUtils<string>.Check))
+                MessageBox.Show("Длина каждой строки дерева меньше 10");
+            else
+                MessageBox.Show("Есть строки длины больше 4");
         }
 
         //Выборка всех эл-тов соответствующих условию
         private void FindAllbutton_Click(object sender, EventArgs e)
         {
             //В целях упрощения записи заводится переменная
-            ITree<int> res;
-            if (TreeInt is ListTree<int>)
-                res = TreeUtils<int>.FindAll(TreeInt, TreeUtils<int>.CheckForNew, TreeUtils<int>.ListConstuctorDelegate);
+            ITree<int> res =null;
+            ITree<string> resS= null;
+            if (TreeInt!=null)
+            {
+
+                if (TreeInt is ListTree<int>)
+                    res = TreeUtils<int>.FindAll(TreeInt, TreeUtils<int>.CheckForNew, TreeUtils<int>.ListConstuctorDelegate);
+                else
+                    res = TreeUtils<int>.FindAll(TreeInt, TreeUtils<int>.CheckForNew, TreeUtils<int>.ArrayConstructorDelegate);
+            }
             else
-                res = TreeUtils<int>.FindAll(TreeInt, TreeUtils<int>.CheckForNew, TreeUtils<int>.ArrayConstructorDelegate);
+            {
+                if (TreeString is ListTree<String>)
+                    resS = TreeUtils<string>.FindAll(TreeString, TreeUtils<string>.CheckForNew, TreeUtils<string>.ListConstuctorDelegate);
+                else
+                    resS = TreeUtils<string>.FindAll(TreeString, TreeUtils<int>.CheckForNew, TreeUtils<string>.ArrayConstructorDelegate);
+
+            }
             //Создание и отображение формы с результирующим деревом
             Form form = new Form();
             TreeView view = new TreeView();
             view.Width = 600;
             view.Height = 500;
-            res.DisplayAllTree(view);
+            if (TreeInt != null)
+                res.DisplayAllTree(view);
+            else
+                resS.DisplayAllTree(view);
             form.Controls.Add(view);
             view.Location = new Point(20, 20);
             form.Width = 800;
@@ -174,8 +262,16 @@ namespace WindowsFormsApp2
         //построение неизменяемого дерева
         private void BuildUnmutablebutton_Click(object sender, EventArgs e)
         {
-            UnmutableTree<int> UnTree = new UnmutableTree<int>(TreeInt);
-            TreeInt = UnTree;
+            if (TreeInt!=null)
+            {
+                UnmutableTree<int> UnTree = new UnmutableTree<int>(TreeInt);
+                TreeInt = UnTree;
+            }
+            else
+            {
+                UnmutableTree<string> UnTree = new UnmutableTree<string>(TreeString);
+                TreeString = UnTree;
+            }
             MessageBox.Show("Дерево построено!");
         }
 

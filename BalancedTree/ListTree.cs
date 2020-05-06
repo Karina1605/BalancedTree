@@ -8,6 +8,8 @@ using System.Collections;
 using System.Windows.Forms;
 using System.Drawing;
 
+
+//Разработать библиотеку для работы со сбалансированным деревом
 namespace BalancedTree
 {
     /// <summary>
@@ -26,8 +28,6 @@ namespace BalancedTree
         //Сслыки на левое и правое поддеревья
         public OneNode<T> left, right;
 
-        //Свойство, указывающее является ли узел листом
-        private bool IsList { get { return (left == null && right == null); } }
 
         //Конструктор с 1 обязательным параметром - информационной частью
         public OneNode(T info, TreeNode v=null)
@@ -40,112 +40,8 @@ namespace BalancedTree
                 nodeview = new TreeNode();
         }
         
-        //Добавление в дерево, на вход подается node типа T возвращается созданный узел дерева (обход в ширину)
-        public OneNode<T> Add(T newNode)
-        {
-            //Если нет узла с эквивалентной информационной частью
-            if (ReturnElem(newNode) == null)
-            {
-                //Очередь из узлов по уровням
-                Queue<OneNode<T>> nodes = new Queue<OneNode<T>>();
-                //Буфер для чтения след узла
-                OneNode<T> buf;
-                //Буфер для хранения узла с пустым правым поддеревом
-                OneNode<T> bufForRight = null;
-                nodes.Enqueue(this);
-                while (nodes.Count > 0)
-                {
-                    //Определяем кол-во узлов на уровне
-                    int c = nodes.Count;
-                    //Проход по уровню
-                    for (int i = 0; i < c; ++i)
-                    {
-                        buf = nodes.Dequeue();
-                        //если у узла левое поддерево пусто, то добавляем его и возвращаем из функции
-                        if (buf.left == null)
-                        {
-                            TreeNode NewNode = buf.nodeview.Nodes.Add(newNode.ToString());
-                            buf.left = new OneNode<T>(newNode, NewNode);
-                            return buf.left;
-                        }
-                        else
-                        {
-                            //Если нет, то кладем в очередь и анализируем правое поддерево
-                            nodes.Enqueue(buf.left);
-                            //Если таких узлов еще не встречалось, а это первый - запоминаем его
-                            if (buf.right == null && bufForRight == null)
-                                bufForRight = buf;
-                        }
-                        //Иначе -также кладем в очередь
-                        if (buf.right != null)
-                            nodes.Enqueue(buf.right);
-                    }
-                    //Ессли нашли узел с пустым правым поддеревом - то создаем в правом поддереве новый узел и возвращаем его
-                    if (bufForRight != null)
-                    {
-                        TreeNode NewNode1 = bufForRight.nodeview.Nodes.Add(newNode.ToString());
-                        bufForRight.right = new OneNode<T>(newNode, NewNode1);
-                        return bufForRight.right;
-                    }
-                }
-            }
-            return null;
-        }
-
-        //Изменение цвета текста в TreeNode
-        public void ChangeColor(Color color)
-        {
-            if (nodeview != null)
-                nodeview.ForeColor = color;
-        }
-
-        //Удаление элемента только в том случае, если он - лист с совпадающей информационной частью
-        //Elem - узел для проверки, node - с чем сверять
-        public static void delIfLast(ref OneNode<T> Elem, T node)
-        {
-            if (Elem != null)
-                //Только если элемент - узел, будем анализировать
-                if (Elem.IsList)
-                {
-                    //Если записи равны удаляем элемент
-                    if (Elem.info.CompareTo(node) == 0)
-                    {
-                        Elem.nodeview.Remove();
-                        Elem.nodeview = null;
-                        Elem = Elem.left;
-                    }
-                }
-                else
-                {
-                    //Иначе - идем вниз по дереву
-                    delIfLast(ref Elem.left, node);
-                    delIfLast(ref Elem.right, node);
-                }
-        }
-
-        //Функция, осуществляющая поиск элемента и возвращающая узел, его содержащий, если эл-та в дереве нет null
-        public OneNode<T> ReturnElem(T node)
-        {
-            //Если информационная часть и node равны - возвращаем текущий узел
-            if (info.CompareTo(node) == 0)
-                return this;
-            //Если не равны и это лист -null
-            if (IsList)
-                return null;
-            //если поддеревья есть - осуществляем поиск по ним
-            OneNode<T> elL = null;
-            OneNode<T> elR = null;
-            if (left != null)
-                elL = left.ReturnElem(node);
-            if (right != null)
-                elR = right.ReturnElem(node);
-            if (elR == null && elL == null)
-                return null;
-            if (elR == null)
-                return elL;
-            return elR;
-        }
-
+        
+       
         //Перегрузка ьазового ToString
         public override string ToString()
         {
@@ -172,24 +68,23 @@ namespace BalancedTree
     public class ListTree<T> : ITree<T> where T: IComparable
     {
         //Корень дерева
-        OneNode<T> root;
-
-        //Свойство для чтения корня
-        public OneNode<T> Root { get { return root; } }
+        public OneNode<T> Root { get; private set; }
 
         //Графическое представление дерева
         TreeView view;
+        //Хранит элемент наденный последней вызываемой функцией Contains (для сокращения времени удаления)
+        OneNode<T> finded;
 
         //Стек, хранящий историю добавления узлов (нужен в удалении)
         Stack<OneNode<T>> OrderNodes;
         /// <summary>
         /// Свойство, хранящее кол-во узлов в дереве в данный момент, только для чтения
         /// </summary>
-        public int Count { get {return OrderNodes.Count; }  }
+        public int Count { get; private set; }
         /// <summary>
         /// Свойство, предоставляющее информацию о том, пусто дерево или нет, только для чтения
         /// </summary>
-        public bool IsEmpty { get { return OrderNodes.Count==0; } }
+        public bool IsEmpty { get { return Root==null; } }
         /// <summary>
         /// Свойство, возвращающее объект, поддерживаемый для foreach
         /// </summary>
@@ -199,7 +94,9 @@ namespace BalancedTree
         //Конструктор без обязательных параметров
         public ListTree(TreeView tree=null)
         {
-            root = null;
+            Root = null;
+            finded = null;
+            Count = 0;
             OrderNodes = new Stack<OneNode<T>>();
             if (tree != null)
                 view = tree;
@@ -215,19 +112,64 @@ namespace BalancedTree
         public void Add(T node)
         {
             //если дерево пусто - просто добавляем в корень
-            if (root == null)
+            if (Root == null)
             {
                 TreeNode rootNode = new TreeNode(node.ToString());
                 view.Nodes.Add(rootNode);
-                root = new OneNode<T>(node, rootNode);
-                OrderNodes.Push(root);
+                Root = new OneNode<T>(node, rootNode);
             }
             else
             {
-                //Иначе пытаемся добавить новый элемент в дерево - если он уникальный (добавить получилось) - добавляем в стек
-                OneNode<T> isCreated = root.Add(node);
-                if (isCreated != null)
-                    OrderNodes.Push(isCreated);
+                if (!Contains(node))
+                {
+                    //Очередь из узлов по уровням
+                    Queue<OneNode<T>> nodes = new Queue<OneNode<T>>();
+                    //Буфер для чтения след узла
+                    OneNode<T> buf;
+                    //Буфер для хранения узла с пустым правым поддеревом
+                    OneNode<T> bufForRight = null;
+                    nodes.Enqueue(Root);
+                    while (nodes.Count > 0)
+                    {
+                        //Определяем кол-во узлов на уровне
+                        int c = nodes.Count;
+                        //Проход по уровню
+                        for (int i = 0; i < c; ++i)
+                        {
+                            buf = nodes.Dequeue();
+                            //если у узла левое поддерево пусто, то добавляем его и возвращаем из функции
+                            if (buf.left == null)
+                            {
+                                TreeNode NewNode = buf.nodeview.Nodes.Add(node.ToString());
+                                buf.left = new OneNode<T>(node, NewNode);
+                                OrderNodes.Push(buf);
+                                ++Count;
+                                return;
+                            }
+                            else
+                            {
+                                //Если нет, то кладем в очередь и анализируем правое поддерево
+                                nodes.Enqueue(buf.left);
+                                //Если таких узлов еще не встречалось, а это первый - запоминаем его
+                                if (buf.right == null && bufForRight == null)
+                                    bufForRight = buf;
+                            }
+                            //Иначе -также кладем в очередь
+                            if (buf.right != null)
+                                nodes.Enqueue(buf.right);
+                        }
+                        //Ессли нашли узел с пустым правым поддеревом - то создаем в правом поддереве новый узел и возвращаем его
+                        if (bufForRight != null)
+                        {
+                            TreeNode NewNode1 = bufForRight.nodeview.Nodes.Add(node.ToString());
+                            bufForRight.right = new OneNode<T>(node, NewNode1);
+                            OrderNodes.Push(bufForRight);
+                            ++Count;
+                            return;
+                        }
+                    }
+                }
+                
             }
         }
 
@@ -237,7 +179,8 @@ namespace BalancedTree
         public void Clear()
         {
             view.Nodes.Clear();
-            root = null;
+            Count = 0;
+            Root = null;
             OrderNodes.Clear();
         }
 
@@ -246,19 +189,31 @@ namespace BalancedTree
         /// </summary>
         /// <param name="node"></param>
         /// <returns></returns>
+        /// В классе определен параметр finded для сокращения времени при удалении
         public bool Contains(T node)
         {
-            //Результат функции - равен ли returnElem null
-            OneNode<T> el = root.ReturnElem(node);
-            if (el != null)
+            if (Root == null)
+                return false;
+            OneNode<T> el = Root;
+            Queue<OneNode<T>> elems = new Queue<OneNode<T>>();
+            elems.Enqueue(el);
+            while (elems.Count>0)
             {
-                el.ChangeColor(Color.Red);
-                MessageBox.Show("Элемент найден");
-                el.ChangeColor(Color.Black);
+                el = elems.Dequeue();
+                if (el.info.CompareTo(node) == 0)
+                {
+                    finded = el;
+                    return true;
+                }
+                    
+                if (el.left != null)
+                    elems.Enqueue(el.left);
+                if (el.right != null)
+                    elems.Enqueue(el.right);
             }
-            else
-                MessageBox.Show("Такого элемента нет");
-            return el!=null;
+            finded = null;
+            return false;
+            
         }
 
         /// <summary>
@@ -271,7 +226,7 @@ namespace BalancedTree
             if (IsEmpty)
                 throw new TryToGetEmptyTree();
             Queue<OneNode<T>> nodesTree= new Queue<OneNode<T>>();
-            nodesTree.Enqueue(root);
+            nodesTree.Enqueue(Root);
             while (nodesTree.Count > 0)
             {
                 OneNode<T> b = nodesTree.Dequeue();
@@ -292,18 +247,29 @@ namespace BalancedTree
         {
             if (IsEmpty)
                 throw new RemovingFromEmptyTree();
-            OneNode<T> elem = root.ReturnElem(node);
-            //Если удаляемый элемент найден- извлекаем последний эл-т из стека, меняем местами значения 
-            //и удаляем последний эл-т из дерева с помощью delIfLast
-            if (elem != null)
+            if (Contains(node))
             {
-                OneNode<T> last = OrderNodes.Pop();
-                if (!elem.Equals(last))
+                if (OrderNodes.Count == 0)
+                    Clear();
+                else
                 {
-                    Help.Swap(ref last.info, ref elem.info);
-                    elem.nodeview.Text = elem.info.ToString();
+                    OneNode<T> inf = OrderNodes.Peek().right == null ? OrderNodes.Peek().left : OrderNodes.Peek().right;
+                    finded.info = inf.info;
+                    finded.nodeview.Text = finded.info.ToString();
+                    OneNode<T> peeked = OrderNodes.Pop();
+                    if (peeked.right == null)
+                    {
+                        peeked.left.nodeview.Remove();
+                        peeked.left = null;
+                    }
+                    else
+                    {
+                        peeked.right.nodeview.Remove();
+                        peeked.right = null;
+                    }
+                    --Count;
                 }
-                OneNode<T>.delIfLast(ref root, node);
+                
             }
         }
 
@@ -313,13 +279,13 @@ namespace BalancedTree
         /// <param name="tree"></param>
         public void DisplayAllTree(TreeView tree)
         {
-            root.nodeview = new TreeNode();
-            root.nodeview.Text = root.info.ToString();
-            tree.Nodes.Add(root.nodeview);
-            if (root.left != null)
-                root.left.Display(root.nodeview);
-            if (root.right != null)
-                root.right.Display(root.nodeview);
+            Root.nodeview = new TreeNode();
+            Root.nodeview.Text = Root.info.ToString();
+            tree.Nodes.Add(Root.nodeview);
+            if (Root.left != null)
+                Root.left.Display(Root.nodeview);
+            if (Root.right != null)
+                Root.right.Display(Root.nodeview);
         }
 
         /// <summary>
